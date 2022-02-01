@@ -6,12 +6,15 @@
 #include <chipmunk/chipmunk_structs.h>
 #include <chipmunk/chipmunk_types.h>
 
-static void cpJSSetShapeBody(cpBody *body);
-static void cpJSSetBodySpace(cpSpace *space);
-static void cpJSSetShapeSpace(cpSpace *space);
-static void cpJSClearBodyConstraintMap();
-static nlohmann::json cpJSBodySerializeConstraints(cpSpace *space);
-static void cpJSBodyDeserializeConstraints(cpSpace *space,
+extern void cpJSSetShapeBody(cpBody *body);
+extern void cpJSBodySetSerializeAsPtr(bool asPtr);
+extern void cpJSConstraintSetSerializeAsPtr(bool asPtr);
+extern void cpJSSetSerializeAsPtr(bool asPtr);
+extern void cpJSSetBodySpace(cpSpace *space);
+extern void cpJSSetShapeSpace(cpSpace *space);
+extern void cpJSClearBodyConstraintMap();
+extern nlohmann::json cpJSBodySerializeConstraints(cpSpace *space);
+extern void cpJSBodyDeserializeConstraints(cpSpace *space,
                                            const nlohmann::json &contraints);
 
 namespace nlohmann {
@@ -53,14 +56,17 @@ template <> struct adl_serializer<struct cpBody *> {
   static cpSpace *space;
   static std::map<std::string, cpConstraint *> constraintMap;
   static std::map<std::string, cpBody *> bodyMap;
+  static bool asPtrStr;
 
   static void to_json(json &j, const struct cpBody *body);
   static cpBody *from_json(const json &j);
 };
 
-template <> struct adl_serializer<cpConstraint *> {
+template <> struct adl_serializer<struct cpConstraint *> {
   static cpSpace *space;
+  static std::map<std::string, cpConstraint *> constraintMap;
   static std::map<std::string, cpBody *> *bodyMap;
+  static bool asPtrStr;
 
   static void getConstraintType(json &j, const cpConstraint *ct);
   static void to_json(json &j, const cpConstraint *ct);
