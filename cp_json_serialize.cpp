@@ -7,7 +7,9 @@
 
 #include <iostream>
 
-std::string ptrToStr(const void *ptr) {
+std::string
+ptrToStr(const void* ptr)
+{
   std::stringstream ss;
   ss << std::hex << ptr;
   return ss.str();
@@ -15,15 +17,19 @@ std::string ptrToStr(const void *ptr) {
 
 namespace nlohmann {
 
-cpFloat cpFloatParse(const json &j) {
+cpFloat
+cpFloatParse(const json& j)
+{
   if (!j.is_null()) {
     return j.get<cpFloat>();
   }
   return INFINITY;
 }
 
-void adl_serializer<struct cpTransform>::to_json(json &j,
-                                                 const struct cpTransform &t) {
+void
+adl_serializer<struct cpTransform>::to_json(json& j,
+                                            const struct cpTransform& t)
+{
   j["a"] = t.a;
   j["b"] = t.b;
   j["c"] = t.c;
@@ -32,8 +38,9 @@ void adl_serializer<struct cpTransform>::to_json(json &j,
   j["ty"] = t.ty;
 }
 
-void adl_serializer<struct cpTransform>::from_json(const json &j,
-                                                   cpTransform &t) {
+void
+adl_serializer<struct cpTransform>::from_json(const json& j, cpTransform& t)
+{
   t.a = j["a"];
   t.b = j["b"];
   t.c = j["c"];
@@ -42,105 +49,124 @@ void adl_serializer<struct cpTransform>::from_json(const json &j,
   t.ty = j["ty"];
 }
 
-void adl_serializer<struct cpVect>::to_json(json &j, const struct cpVect &v) {
-  j = {v.x, v.y};
+void
+adl_serializer<struct cpVect>::to_json(json& j, const struct cpVect& v)
+{
+  j = { v.x, v.y };
 }
 
-void adl_serializer<struct cpVect>::from_json(const json &j, cpVect &v) {
+void
+adl_serializer<struct cpVect>::from_json(const json& j, cpVect& v)
+{
   v.x = j[0].get<cpFloat>();
   v.y = j[1].get<cpFloat>();
 }
 
-void adl_serializer<struct cpShapeFilter>::to_json(
-    json &j, const struct cpShapeFilter &f) {
-  j = {f.group, f.categories, f.mask};
+void
+adl_serializer<struct cpShapeFilter>::to_json(json& j,
+                                              const struct cpShapeFilter& f)
+{
+  j = { f.group, f.categories, f.mask };
 }
 
-void adl_serializer<struct cpShapeFilter>::from_json(const json &j,
-                                                     cpShapeFilter &f) {
+void
+adl_serializer<struct cpShapeFilter>::from_json(const json& j, cpShapeFilter& f)
+{
   f.group = j[0].get<cpGroup>();
   f.categories = j[1].get<cpBitmask>();
   f.mask = j[2].get<cpBitmask>();
 }
 
-void adl_serializer<struct cpBB>::to_json(json &j, const struct cpBB &bb) {
+void
+adl_serializer<struct cpBB>::to_json(json& j, const struct cpBB& bb)
+{
   j["l"] = bb.l;
   j["b"] = bb.b;
   j["r"] = bb.r;
   j["t"] = bb.t;
 }
 
-void adl_serializer<struct cpBB>::from_json(const json &j, cpBB &bb) {
+void
+adl_serializer<struct cpBB>::from_json(const json& j, cpBB& bb)
+{
   bb.l = j["l"].get<cpFloat>();
   bb.b = j["b"].get<cpFloat>();
   bb.r = j["r"].get<cpFloat>();
   bb.t = j["t"].get<cpFloat>();
 }
 
-void adl_serializer<struct cpShapeMassInfo>::to_json(
-    json &j, const struct cpShapeMassInfo &mi) {
+void
+adl_serializer<struct cpShapeMassInfo>::to_json(
+  json& j,
+  const struct cpShapeMassInfo& mi)
+{
   j["m"] = mi.m;
   j["i"] = mi.i;
   j["cog"] = mi.cog;
   j["area"] = mi.area;
 }
-void adl_serializer<struct cpShapeMassInfo>::from_json(const json &j,
-                                                       cpShapeMassInfo &mi) {
+void
+adl_serializer<struct cpShapeMassInfo>::from_json(const json& j,
+                                                  cpShapeMassInfo& mi)
+{
   mi.m = j["m"].get<cpFloat>();
   mi.i = j["i"].get<cpFloat>();
   mi.cog = j["cog"].get<cpVect>();
   mi.area = j["area"].get<cpFloat>();
 }
 
-void adl_serializer<struct cpShape *>::to_json(json &j,
-                                               const struct cpShape *shape) {
+void
+adl_serializer<struct cpShape*>::to_json(json& j, const struct cpShape* shape)
+{
   switch (shape->klass->type) {
-  case CP_CIRCLE_SHAPE: {
+    case CP_CIRCLE_SHAPE: {
 
-    j["type"] = "circle";
-    cpCircleShape *circle = (cpCircleShape *)shape;
-    j["c"] = circle->c;
-    j["r"] = circle->r;
-    break;
-  }
-
-  case CP_SEGMENT_SHAPE: {
-    cpSegmentShape *seg = (cpSegmentShape *)shape;
-    j["type"] = "segment";
-    j["a"] = seg->a;
-    j["b"] = seg->b;
-    j["r"] = seg->r;
-    break;
-  }
-
-  case CP_POLY_SHAPE: {
-    j["type"] = "poly";
-    cpPolyShape *poly = (cpPolyShape *)shape;
-    std::size_t count = poly->count;
-    std::vector<cpVect> verts(count);
-    for (auto i = 0; i < count; i++) {
-      verts[i] = poly->planes[i + count].v0;
+      j["type"] = "circle";
+      cpCircleShape* circle = (cpCircleShape*)shape;
+      j["c"] = circle->c;
+      j["r"] = circle->r;
+      break;
     }
-    j["verts"] = verts;
-    j["r"] = poly->r;
 
-    j["ctype"] = shape->type;
-    j["filter"] = shape->filter;
-    j["sensor"] = shape->sensor;
-    j["e"] = shape->e;
-    j["u"] = shape->u;
-    j["surfaceV"] = shape->surfaceV;
-    j["bb"] = shape->bb;
-    j["userData"] = (uint64_t)shape->userData;
+    case CP_SEGMENT_SHAPE: {
+      cpSegmentShape* seg = (cpSegmentShape*)shape;
+      j["type"] = "segment";
+      j["a"] = seg->a;
+      j["b"] = seg->b;
+      j["r"] = seg->r;
+      break;
+    }
 
-    j["raw"] = true;
-    break;
-  }
+    case CP_POLY_SHAPE: {
+      j["type"] = "poly";
+      cpPolyShape* poly = (cpPolyShape*)shape;
+      std::size_t count = poly->count;
+      std::vector<cpVect> verts(count);
+      for (auto i = 0; i < count; i++) {
+        verts[i] = poly->planes[i + count].v0;
+      }
+      j["verts"] = verts;
+      j["r"] = poly->r;
+
+      j["ctype"] = shape->type;
+      j["filter"] = shape->filter;
+      j["sensor"] = shape->sensor;
+      j["e"] = shape->e;
+      j["u"] = shape->u;
+      j["surfaceV"] = shape->surfaceV;
+      j["bb"] = shape->bb;
+      j["userData"] = (uint64_t)shape->userData;
+
+      j["raw"] = true;
+      break;
+    }
   }
 }
 
-cpShape *adl_serializer<struct cpShape *>::from_json(const json &j) {
-  cpShape *shape = nullptr;
+cpShape*
+adl_serializer<struct cpShape*>::from_json(const json& j)
+{
+  cpShape* shape = nullptr;
   if (j == nullptr) {
     return shape;
   }
@@ -148,8 +174,8 @@ cpShape *adl_serializer<struct cpShape *>::from_json(const json &j) {
     shape = cpCircleShapeNew(body, j["r"].get<cpFloat>(), j["c"].get<cpVect>());
   }
   if (j["type"] == "segment") {
-    shape = cpSegmentShapeNew(body, j["a"].get<cpVect>(), j["b"].get<cpVect>(),
-                              j["r"].get<cpFloat>());
+    shape = cpSegmentShapeNew(
+      body, j["a"].get<cpVect>(), j["b"].get<cpVect>(), j["r"].get<cpFloat>());
   }
   if (j["type"] == "poly") {
     std::size_t count = j["verts"].size();
@@ -161,13 +187,13 @@ cpShape *adl_serializer<struct cpShape *>::from_json(const json &j) {
     bool raw = false;
     if (j.count("raw") > 0)
       raw = j["raw"].get<bool>();
-    cpShape *polyShape;
+    cpShape* polyShape;
     if (raw) {
       polyShape =
-          cpPolyShapeNewRaw(body, count, &verts[0], j["r"].get<cpFloat>());
+        cpPolyShapeNewRaw(body, count, &verts[0], j["r"].get<cpFloat>());
     } else {
-      polyShape = cpPolyShapeNew(body, count, &verts[0], cpTransformIdentity,
-                                 j["r"].get<cpFloat>());
+      polyShape = cpPolyShapeNew(
+        body, count, &verts[0], cpTransformIdentity, j["r"].get<cpFloat>());
     }
 
     shape = cpSpaceAddShape(space, polyShape);
@@ -184,8 +210,9 @@ cpShape *adl_serializer<struct cpShape *>::from_json(const json &j) {
   return shape;
 }
 
-void adl_serializer<struct cpBody *>::to_json(json &j,
-                                              const struct cpBody *body) {
+void
+adl_serializer<struct cpBody*>::to_json(json& j, const struct cpBody* body)
+{
   if (!body) {
     j = nullptr;
   } else {
@@ -193,7 +220,7 @@ void adl_serializer<struct cpBody *>::to_json(json &j,
     if (asPtrStr)
       return;
 
-    j["type"] = (uint32_t)cpBodyGetType(const_cast<cpBody *>(body));
+    j["type"] = (uint32_t)cpBodyGetType(const_cast<cpBody*>(body));
     j["i"] = body->i;
     j["m"] = body->m;
     // if (j["i"].dump() == "null" || j["m"].dump() == "null") {
@@ -219,20 +246,20 @@ void adl_serializer<struct cpBody *>::to_json(json &j,
     j["v_bias"] = body->v_bias;
     j["w_bias"] = body->w_bias;
 
-    std::vector<cpShape *> shapes;
+    std::vector<cpShape*> shapes;
     // get shapes by walking over the shapeList
-    cpShape *it = body->shapeList;
+    cpShape* it = body->shapeList;
     while (it) {
       shapes.push_back(it);
       it = it->next;
     }
     j["shapes"] = shapes;
 
-    cpBody *staticBody = cpSpaceGetStaticBody(space);
+    cpBody* staticBody = cpSpaceGetStaticBody(space);
 
     std::vector<std::string> constraintPtrs;
     // get shapes by walking over the shapeList
-    cpConstraint *itc = body->constraintList;
+    cpConstraint* itc = body->constraintList;
     while (itc) {
       auto ptr = ptrToStr(itc);
       constraintMap[ptr] = itc;
@@ -246,14 +273,16 @@ void adl_serializer<struct cpBody *>::to_json(json &j,
   }
 }
 
-cpBody *adl_serializer<struct cpBody *>::from_json(const json &j) {
+cpBody*
+adl_serializer<struct cpBody*>::from_json(const json& j)
+{
   if (j.is_null())
     return nullptr;
   if (asPtrStr)
     return bodyMap[j["ptr"].get<std::string>()];
 
   auto type = j["type"].get<uint32_t>();
-  cpBody *body;
+  cpBody* body;
   if (type == CP_BODY_TYPE_DYNAMIC) {
     body = cpBodyNew(cpFloatParse(j["m"]), cpFloatParse(j["i"]));
   } else if (type == CP_BODY_TYPE_KINEMATIC) {
@@ -291,10 +320,10 @@ cpBody *adl_serializer<struct cpBody *>::from_json(const json &j) {
   if (j["shapes"].is_array() && j["shapes"].size() > 0) {
     cpJSSetShapeBody(body);
     cpJSSetShapeSpace(space);
-    body->shapeList = j["shapes"][0].get<cpShape *>();
-    cpShape *it = body->shapeList;
+    body->shapeList = j["shapes"][0].get<cpShape*>();
+    cpShape* it = body->shapeList;
     for (auto i = 1; i < j["shapes"].size(); ++i) {
-      cpShape *s = j["shapes"][i].get<cpShape *>();
+      cpShape* s = j["shapes"][i].get<cpShape*>();
       it->next = s;
       it = s;
     }
@@ -305,62 +334,87 @@ cpBody *adl_serializer<struct cpBody *>::from_json(const json &j) {
   return body;
 }
 
-void adl_serializer<struct cpConstraint *>::getConstraintType(
-    json &j, const cpConstraint *ct) {
+void
+adl_serializer<struct cpConstraint*>::getConstraintType(json& j,
+                                                        const cpConstraint* ct)
+{
   if (cpConstraintIsGearJoint(ct)) {
-    cpGearJoint *gj = (cpGearJoint *)ct;
+    cpGearJoint* gj = (cpGearJoint*)ct;
     j["type"] = "GearJoint";
     j["phase"] = gj->phase;
     j["ratio"] = gj->ratio;
   }
   if (cpConstraintIsPivotJoint(ct)) {
-    cpPivotJoint *pv = (cpPivotJoint *)ct;
+    cpPivotJoint* pv = (cpPivotJoint*)ct;
     j["type"] = "PivotJoint";
     j["anchorA"] = pv->anchorA;
     j["anchorB"] = pv->anchorB;
   }
   if (cpConstraintIsPinJoint(ct)) {
-    cpPinJoint *pv = (cpPinJoint *)ct;
+    cpPinJoint* pv = (cpPinJoint*)ct;
     j["type"] = "PinJoint";
     j["anchorA"] = pv->anchorA;
     j["anchorB"] = pv->anchorB;
   }
   if (cpConstraintIsDampedRotarySpring(ct)) {
-    cpDampedRotarySpring *drs = (cpDampedRotarySpring *)ct;
+    cpDampedRotarySpring* drs = (cpDampedRotarySpring*)ct;
     j["restAngle"] = drs->restAngle;
     j["stiffness"] = drs->stiffness;
     j["damping"] = drs->damping;
     j["type"] = "DampedRotarySpring";
   }
   if (cpConstraintIsDampedSpring(ct)) {
-    cpDampedSpring *ds = (cpDampedSpring *)ct;
+    cpDampedSpring* ds = (cpDampedSpring*)ct;
+    j["type"] = "DampedSpring";
     j["anchorA"] = ds->anchorA;
     j["anchorB"] = ds->anchorB;
     j["restLength"] = ds->restLength;
     j["stiffness"] = ds->stiffness;
     j["damping"] = ds->damping;
-
-    j["type"] = "DampedSpring";
   }
   if (cpConstraintIsGrooveJoint(ct)) {
+
+    cpGrooveJoint* gj = (cpGrooveJoint*)ct;
     j["type"] = "GrooveJoint";
+    j["grv_n"] = gj->grv_n;
+    j["grv_a"] = gj->grv_a;
+    j["grv_b"] = gj->grv_b;
+    j["anchorB"] = gj->anchorB;
+    j["jAcc"] = gj->jAcc;
   }
   if (cpConstraintIsRatchetJoint(ct)) {
+
+    cpRatchetJoint* rj = (cpRatchetJoint*)ct;
     j["type"] = "RatchetJoint";
+    j["angle"] = rj->angle;
+    j["phase"] = rj->phase;
+    j["ratchet"] = rj->ratchet;
   }
   if (cpConstraintIsRotaryLimitJoint(ct)) {
+    cpRotaryLimitJoint* rlj = (cpRotaryLimitJoint*)ct;
     j["type"] = "RotaryLimitJoint";
+    j["min"] = rlj->min;
+    j["max"] = rlj->max;
   }
   if (cpConstraintIsSimpleMotor(ct)) {
+    cpSimpleMotor* sm = (cpSimpleMotor*)ct;
     j["type"] = "SimpleMotor";
+    j["rate"] = sm->rate;
+    j["jAcc"] = sm->jAcc;
   }
   if (cpConstraintIsSlideJoint(ct)) {
+    cpSlideJoint* sj = (cpSlideJoint*)ct;
     j["type"] = "SlideJoint";
+    j["anchorA"] = sj->anchorA;
+    j["anchorB"] = sj->anchorB;
+    j["min"] = sj->min;
+    j["max"] = sj->max;
   }
 }
 
-void adl_serializer<struct cpConstraint *>::to_json(json &j,
-                                                    const cpConstraint *ct) {
+void
+adl_serializer<struct cpConstraint*>::to_json(json& j, const cpConstraint* ct)
+{
   if (!ct) {
     j = nullptr;
     return;
@@ -368,7 +422,7 @@ void adl_serializer<struct cpConstraint *>::to_json(json &j,
   j["ptr"] = ptrToStr(ct);
   if (asPtrStr)
     return;
-  cpBody *staticBody = cpSpaceGetStaticBody(space);
+  cpBody* staticBody = cpSpaceGetStaticBody(space);
 
   getConstraintType(j, ct);
   j["maxForce"] = ct->maxForce;
@@ -380,21 +434,23 @@ void adl_serializer<struct cpConstraint *>::to_json(json &j,
   j["b"] = (ct->b == staticBody) ? "static" : ptrToStr(ct->b);
 }
 
-cpConstraint *adl_serializer<struct cpConstraint *>::from_json(const json &j) {
+cpConstraint*
+adl_serializer<struct cpConstraint*>::from_json(const json& j)
+{
   if (j.is_null())
     return nullptr;
   if (asPtrStr) {
     return constraintMap[j["ptr"].get<std::string>()];
   }
 
-  cpBody *staticBody = cpSpaceGetStaticBody(space);
+  cpBody* staticBody = cpSpaceGetStaticBody(space);
   if (!bodyMap) {
     std::cerr << "bodyMap not provided , cannot deserialize constraints";
     return nullptr;
   }
-  auto &bm = *bodyMap;
+  auto& bm = *bodyMap;
   cpBody *a, *b;
-  cpConstraint *ct;
+  cpConstraint* ct;
   auto as = j["a"].get<std::string>();
   auto bs = j["b"].get<std::string>();
   if (as == "static")
@@ -441,27 +497,40 @@ cpConstraint *adl_serializer<struct cpConstraint *>::from_json(const json &j) {
     cpFloat stiffness = cpFloatParse(j["stiffness"]);
     cpFloat damping = cpFloatParse(j["damping"]);
 
-    ct = cpDampedSpringNew(a, b, anchorA, anchorB, restLength, stiffness,
-                           damping);
-
-  } else
+    ct =
+      cpDampedSpringNew(a, b, anchorA, anchorB, restLength, stiffness, damping);
+  }
+  if ("GrooveJoint" == j["type"]) {
+    cpVect grv_n = j["grv_n"].get<cpVect>();
+    cpVect grv_a = j["grv_a"].get<cpVect>();
+    cpVect grv_b = j["grv_b"].get<cpVect>();
+    cpVect anchorB = j["anchorB"].get<cpVect>();
+    ct = cpGrooveJointNew(a, b, grv_a, grv_b, anchorB);
+  }
+  if ("RatchetJoint" == j["type"]) {
+    cpFloat angle = cpFloatParse(j["angle"]);
+    cpFloat phase = cpFloatParse(j["phase"]);
+    cpFloat ratchet = cpFloatParse(j["ratchet"]);
+    ct = cpRatchetJointNew(a, b, phase, ratchet);
+  }
+  if ("RotaryLimitJoint" == j["type"]) {
+    cpFloat min = cpFloatParse(j["min"]);
+    cpFloat max = cpFloatParse(j["max"]);
+    ct = cpRotaryLimitJointNew(a, b, min, max);
+  }
+  if ("SimpleMotor" == j["type"]) {
+    cpFloat rate = cpFloatParse(j["rate"]);
+    ct = cpSimpleMotorNew(a, b, rate);
+  }
+  if ("SlideJoint" == j["type"]) {
+    cpVect anchorA = j["anchorA"].get<cpVect>();
+    cpVect anchorB = j["anchorB"].get<cpVect>();
+    cpFloat min = cpFloatParse(j["min"]);
+    cpFloat max = cpFloatParse(j["max"]);
+    ct = cpSlideJointNew(a, b, anchorA, anchorB, min, max);
+  } else {
     return nullptr;
-  // TODO add other contraint types
-  // if ("GrooveJoint" == j["type"]) {
-  //   cpGrooveJointNew();
-  // }
-  // if ("RatchetJoint" == j["type"]) {
-  //   cpRatchetJointNew();
-  // }
-  // if ("RotaryLimitJoint" == j["type"]) {
-  //   cpRotaryLimitJointNew();
-  // }
-  // if ("SimpleMotor" == j["type"]) {
-  //   cpSimpleMotorNew();
-  // }
-  // if ("SlideJoint" == j["type"]) {
-  //   cpSlideJointNew();
-  // }
+  }
 
   ct = cpSpaceAddConstraint(space, ct);
 
@@ -478,48 +547,50 @@ cpConstraint *adl_serializer<struct cpConstraint *>::from_json(const json &j) {
   return ct;
 }
 
-void adl_serializer<cpSpace *>::to_json(json &j, const cpSpace *space) {
-  space = const_cast<cpSpace *>(space);
+void
+adl_serializer<cpSpace*>::to_json(json& j, const cpSpace* space)
+{
+  space = const_cast<cpSpace*>(space);
 
   std::vector<nlohmann::json> body_vec;
   std::vector<nlohmann::json> constraint_vec;
-  nlohmann::adl_serializer<cpBody *>::space = (cpSpace *)space;
+  nlohmann::adl_serializer<cpBody*>::space = (cpSpace*)space;
 
   {
-    cpArray *bodies = space->dynamicBodies;
+    cpArray* bodies = space->dynamicBodies;
     for (int i = 0; i < bodies->num; i++) {
-      body_vec.push_back((cpBody *)bodies->arr[i]);
+      body_vec.push_back((cpBody*)bodies->arr[i]);
     }
 
-    cpArray *otherBodies = space->staticBodies;
+    cpArray* otherBodies = space->staticBodies;
     for (int i = 0; i < otherBodies->num; i++) {
-      body_vec.push_back((cpBody *)otherBodies->arr[i]);
+      body_vec.push_back((cpBody*)otherBodies->arr[i]);
     }
 
-    cpArray *components = space->sleepingComponents;
+    cpArray* components = space->sleepingComponents;
     for (int i = 0; i < components->num; i++) {
-      cpBody *root = (cpBody *)components->arr[i];
+      cpBody* root = (cpBody*)components->arr[i];
 
-      cpBody *body = root;
+      cpBody* body = root;
       while (body) {
-        cpBody *next = body->sleeping.next;
+        cpBody* next = body->sleeping.next;
         body_vec.push_back(body);
         body = next;
       }
     }
 
-    nlohmann::adl_serializer<struct cpConstraint *>::space = (cpSpace *)space;
-    cpArray *constraints = space->constraints;
+    nlohmann::adl_serializer<struct cpConstraint*>::space = (cpSpace*)space;
+    cpArray* constraints = space->constraints;
 
     for (int i = 0; i < constraints->num; i++) {
-      constraint_vec.push_back((cpConstraint *)constraints->arr[i]);
+      constraint_vec.push_back((cpConstraint*)constraints->arr[i]);
     }
   }
   j["bodies"] = body_vec;
-  nlohmann::adl_serializer<struct cpBody *>::space = nullptr;
+  nlohmann::adl_serializer<struct cpBody*>::space = nullptr;
 
   j["constraints"] = constraint_vec;
-  nlohmann::adl_serializer<struct cpConstraint *>::space = nullptr;
+  nlohmann::adl_serializer<struct cpConstraint*>::space = nullptr;
 
   j["iterations"] = space->iterations;
 
@@ -533,8 +604,10 @@ void adl_serializer<cpSpace *>::to_json(json &j, const cpSpace *space) {
   j["userData"] = (uint64_t)space->userData;
 }
 
-cpSpace *adl_serializer<struct cpSpace *>::from_json(const json &j) {
-  cpSpace *space = cpSpaceNew();
+cpSpace*
+adl_serializer<struct cpSpace*>::from_json(const json& j)
+{
+  cpSpace* space = cpSpaceNew();
   space->iterations = j["iterations"].get<int>();
   space->gravity = j["gravity"].get<cpVect>();
   space->damping = j["damping"].get<cpFloat>();
@@ -545,91 +618,108 @@ cpSpace *adl_serializer<struct cpSpace *>::from_json(const json &j) {
   space->collisionPersistence = j["collisionPersistence"].get<cpTimestamp>();
   space->userData = (cpDataPointer)j["userData"].get<uint64_t>();
 
-  nlohmann::adl_serializer<struct cpBody *>::space = space;
-  for (auto const &body_val : j["bodies"]) {
-    nlohmann::json body = body_val.get<cpBody *>();
+  nlohmann::adl_serializer<struct cpBody*>::space = space;
+  for (auto const& body_val : j["bodies"]) {
+    nlohmann::json body = body_val.get<cpBody*>();
   }
-  nlohmann::adl_serializer<struct cpBody *>::space = nullptr;
+  nlohmann::adl_serializer<struct cpBody*>::space = nullptr;
 
   // constraints come after bodies
-  nlohmann::adl_serializer<struct cpConstraint *>::space = space;
-  nlohmann::adl_serializer<struct cpConstraint *>::bodyMap =
-      &nlohmann::adl_serializer<struct cpBody *>::bodyMap;
-  for (auto const &constraint_val : j["constraints"]) {
-    nlohmann::json constraint = constraint_val.get<cpConstraint *>();
+  nlohmann::adl_serializer<struct cpConstraint*>::space = space;
+  nlohmann::adl_serializer<struct cpConstraint*>::bodyMap =
+    &nlohmann::adl_serializer<struct cpBody*>::bodyMap;
+  for (auto const& constraint_val : j["constraints"]) {
+    nlohmann::json constraint = constraint_val.get<cpConstraint*>();
   }
-  nlohmann::adl_serializer<struct cpConstraint *>::space = nullptr;
-  nlohmann::adl_serializer<struct cpConstraint *>::bodyMap = nullptr;
+  nlohmann::adl_serializer<struct cpConstraint*>::space = nullptr;
+  nlohmann::adl_serializer<struct cpConstraint*>::bodyMap = nullptr;
   return space;
 }
 
-cpSpace *adl_serializer<struct cpBody *>::space = nullptr;
-std::map<std::string, cpConstraint *>
-    adl_serializer<struct cpBody *>::constraintMap = {};
-std::map<std::string, cpBody *> adl_serializer<struct cpBody *>::bodyMap = {};
-bool adl_serializer<struct cpBody *>::asPtrStr = false;
+cpSpace* adl_serializer<struct cpBody*>::space = nullptr;
+std::map<std::string, cpConstraint*>
+  adl_serializer<struct cpBody*>::constraintMap = {};
+std::map<std::string, cpBody*> adl_serializer<struct cpBody*>::bodyMap = {};
+bool adl_serializer<struct cpBody*>::asPtrStr = false;
 
-cpBody *adl_serializer<struct cpShape *>::body = nullptr;
-cpSpace *adl_serializer<struct cpShape *>::space = nullptr;
+cpBody* adl_serializer<struct cpShape*>::body = nullptr;
+cpSpace* adl_serializer<struct cpShape*>::space = nullptr;
 
-cpSpace *adl_serializer<struct cpConstraint *>::space = nullptr;
-bool adl_serializer<struct cpConstraint *>::asPtrStr = false;
-std::map<std::string, cpBody *>
-    *adl_serializer<struct cpConstraint *>::bodyMap = nullptr;
-std::map<std::string, cpConstraint *>
-    adl_serializer<struct cpConstraint *>::constraintMap = {};
+cpSpace* adl_serializer<struct cpConstraint*>::space = nullptr;
+bool adl_serializer<struct cpConstraint*>::asPtrStr = false;
+std::map<std::string, cpBody*>* adl_serializer<struct cpConstraint*>::bodyMap =
+  nullptr;
+std::map<std::string, cpConstraint*>
+  adl_serializer<struct cpConstraint*>::constraintMap = {};
 
 } // namespace nlohmann
 
-void cpJSSetShapeBody(cpBody *body) {
-  nlohmann::adl_serializer<struct cpShape *>::body = body;
+void
+cpJSSetShapeBody(cpBody* body)
+{
+  nlohmann::adl_serializer<struct cpShape*>::body = body;
 };
 
-void cpJSSetBodySpace(cpSpace *space) {
-  nlohmann::adl_serializer<struct cpBody *>::space = space;
+void
+cpJSSetBodySpace(cpSpace* space)
+{
+  nlohmann::adl_serializer<struct cpBody*>::space = space;
 };
 
-void cpJSSetShapeSpace(cpSpace *space) {
-  nlohmann::adl_serializer<struct cpShape *>::space = space;
+void
+cpJSSetShapeSpace(cpSpace* space)
+{
+  nlohmann::adl_serializer<struct cpShape*>::space = space;
 };
 
-void cpJSClearBodyConstraintMap() {
-  nlohmann::adl_serializer<struct cpBody *>::constraintMap.clear();
+void
+cpJSClearBodyConstraintMap()
+{
+  nlohmann::adl_serializer<struct cpBody*>::constraintMap.clear();
 };
 
-nlohmann::json cpJSBodySerializeConstraints(cpSpace *space) {
-  nlohmann::adl_serializer<struct cpConstraint *>::space = space;
+nlohmann::json
+cpJSBodySerializeConstraints(cpSpace* space)
+{
+  nlohmann::adl_serializer<struct cpConstraint*>::space = space;
   std::vector<nlohmann::json> res;
-  for (auto const &[key, val] :
-       nlohmann::adl_serializer<struct cpBody *>::constraintMap) {
+  for (auto const& [key, val] :
+       nlohmann::adl_serializer<struct cpBody*>::constraintMap) {
     nlohmann::json ct = val;
     res.push_back(ct);
   }
-  nlohmann::adl_serializer<struct cpConstraint *>::space = nullptr;
+  nlohmann::adl_serializer<struct cpConstraint*>::space = nullptr;
   return res;
 };
 
-void cpJSBodyDeserializeConstraints(cpSpace *space,
-                                    const nlohmann::json &contraints) {
-  nlohmann::adl_serializer<struct cpConstraint *>::space = space;
-  nlohmann::adl_serializer<struct cpConstraint *>::bodyMap =
-      &nlohmann::adl_serializer<struct cpBody *>::bodyMap;
+void
+cpJSBodyDeserializeConstraints(cpSpace* space, const nlohmann::json& contraints)
+{
+  nlohmann::adl_serializer<struct cpConstraint*>::space = space;
+  nlohmann::adl_serializer<struct cpConstraint*>::bodyMap =
+    &nlohmann::adl_serializer<struct cpBody*>::bodyMap;
 
-  for (auto const &val : contraints) {
+  for (auto const& val : contraints) {
     std::cout << val.dump() << std::endl;
-    nlohmann::json x = val.get<cpConstraint *>();
+    nlohmann::json x = val.get<cpConstraint*>();
   }
-  nlohmann::adl_serializer<struct cpConstraint *>::space = nullptr;
-  nlohmann::adl_serializer<struct cpConstraint *>::bodyMap = nullptr;
+  nlohmann::adl_serializer<struct cpConstraint*>::space = nullptr;
+  nlohmann::adl_serializer<struct cpConstraint*>::bodyMap = nullptr;
 };
 
-void cpJSBodySetSerializeAsPtr(bool asPtr) {
-  nlohmann::adl_serializer<struct cpBody *>::asPtrStr = asPtr;
+void
+cpJSBodySetSerializeAsPtr(bool asPtr)
+{
+  nlohmann::adl_serializer<struct cpBody*>::asPtrStr = asPtr;
 };
-void cpJSConstraintSetSerializeAsPtr(bool asPtr) {
-  nlohmann::adl_serializer<struct cpConstraint *>::asPtrStr = asPtr;
+void
+cpJSConstraintSetSerializeAsPtr(bool asPtr)
+{
+  nlohmann::adl_serializer<struct cpConstraint*>::asPtrStr = asPtr;
 };
-void cpJSSetSerializeAsPtr(bool asPtr) {
-  nlohmann::adl_serializer<struct cpBody *>::asPtrStr = asPtr;
-  nlohmann::adl_serializer<struct cpConstraint *>::asPtrStr = asPtr;
+void
+cpJSSetSerializeAsPtr(bool asPtr)
+{
+  nlohmann::adl_serializer<struct cpBody*>::asPtrStr = asPtr;
+  nlohmann::adl_serializer<struct cpConstraint*>::asPtrStr = asPtr;
 };
