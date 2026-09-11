@@ -147,20 +147,22 @@ adl_serializer<struct cpShape*>::to_json(json& j, const struct cpShape* shape)
       }
       j["verts"] = verts;
       j["r"] = poly->r;
-
-      j["ctype"] = shape->type;
-      j["filter"] = shape->filter;
-      j["sensor"] = shape->sensor;
-      j["e"] = shape->e;
-      j["u"] = shape->u;
-      j["surfaceV"] = shape->surfaceV;
-      j["bb"] = shape->bb;
-      j["userData"] = (uint64_t)shape->userData;
-
       j["raw"] = true;
       break;
     }
   }
+
+  // Common to every shape type. These used to be written inside the poly case
+  // only, so a circle or segment came back with no collision filter and no
+  // collision type -- it collided with everything, or with nothing.
+  j["ctype"] = shape->type;
+  j["filter"] = shape->filter;
+  j["sensor"] = shape->sensor;
+  j["e"] = shape->e;
+  j["u"] = shape->u;
+  j["surfaceV"] = shape->surfaceV;
+  j["bb"] = shape->bb;
+  j["userData"] = (uint64_t)shape->userData;
 }
 
 cpShape*
@@ -172,12 +174,12 @@ adl_serializer<struct cpShape*>::from_json(const json& j)
   }
   if (j["type"] == "circle") {
     shape = cpCircleShapeNew(body, j["r"].get<cpFloat>(), j["c"].get<cpVect>());
-  }
-  if (j["type"] == "segment") {
+
+  } else if (j["type"] == "segment") {
     shape = cpSegmentShapeNew(
       body, j["a"].get<cpVect>(), j["b"].get<cpVect>(), j["r"].get<cpFloat>());
-  }
-  if (j["type"] == "poly") {
+
+  } else if (j["type"] == "poly") {
     std::size_t count = j["verts"].size();
     std::vector<cpVect> verts(count);
     auto jv = j["verts"];
@@ -187,26 +189,33 @@ adl_serializer<struct cpShape*>::from_json(const json& j)
     bool raw = false;
     if (j.count("raw") > 0)
       raw = j["raw"].get<bool>();
-    cpShape* polyShape;
     if (raw) {
-      polyShape =
-        cpPolyShapeNewRaw(body, count, &verts[0], j["r"].get<cpFloat>());
+      shape = cpPolyShapeNewRaw(body, count, &verts[0], j["r"].get<cpFloat>());
     } else {
-      polyShape = cpPolyShapeNew(
+      shape = cpPolyShapeNew(
         body, count, &verts[0], cpTransformIdentity, j["r"].get<cpFloat>());
     }
 
-    shape = cpSpaceAddShape(space, polyShape);
-    shape->sensor = j["sensor"].get<cpBool>();
-    shape->e = j["e"].get<cpFloat>();
-    shape->u = j["u"].get<cpFloat>();
-    shape->surfaceV = j["surfaceV"].get<cpVect>();
-    shape->userData = (cpDataPointer)j["userData"].get<uint64_t>();
-    shape->type = j["ctype"].get<cpCollisionType>();
-    shape->filter = j["filter"].get<cpShapeFilter>();
-    shape->bb = j["bb"].get<cpBB>();
-    cpShapeSetCollisionType(shape, shape->type);
+  } else {
+    std::cerr << "cpSerializeJson: unsupported shape type "
+              << j.value("type", std::string("<missing>")) << ", skipped"
+              << std::endl;
+    return nullptr;
   }
+
+  // Adding to the space and restoring the properties used to live inside the
+  // poly branch. A circle or segment was therefore allocated, never added, and
+  // leaked -- and its body came back with no collider at all.
+  shape = cpSpaceAddShape(space, shape);
+  shape->sensor = j["sensor"].get<cpBool>();
+  shape->e = j["e"].get<cpFloat>();
+  shape->u = j["u"].get<cpFloat>();
+  shape->surfaceV = j["surfaceV"].get<cpVect>();
+  shape->userData = (cpDataPointer)j["userData"].get<uint64_t>();
+  shape->type = j["ctype"].get<cpCollisionType>();
+  shape->filter = j["filter"].get<cpShapeFilter>();
+  shape->bb = j["bb"].get<cpBB>();
+  cpShapeSetCollisionType(shape, shape->type);
   return shape;
 }
 
@@ -278,8 +287,15 @@ adl_serializer<struct cpBody*>::from_json(const json& j)
 {
   if (j.is_null())
     return nullptr;
-  if (asPtrStr)
-    return bodyMap[j["ptr"].get<std::string>()];
+  if (asPtrStr) {
+    auto it = bodyMap.find(j["ptr"].get<std::string>());
+    if (it == bodyMap.end()) {
+      std::cerr << "cpSerializeJson: body " << j["ptr"].get<std::string>()
+                << " is not in this save, resolving to null" << std::endl;
+      return nullptr;
+    }
+    return it->second;
+  }
 
   auto type = j["type"].get<uint32_t>();
   cpBody* body;
@@ -440,7 +456,13 @@ adl_serializer<struct cpConstraint*>::from_json(const json& j)
   if (j.is_null())
     return nullptr;
   if (asPtrStr) {
-    return constraintMap[j["ptr"].get<std::string>()];
+    auto it = constraintMap.find(j["ptr"].get<std::string>());
+    if (it == constraintMap.end()) {
+      std::cerr << "cpSerializeJson: constraint " << j["ptr"].get<std::string>()
+                << " is not in this save, resolving to null" << std::endl;
+      return nullptr;
+    }
+    return it->second;
   }
 
   cpBody* staticBody = cpSpaceGetStaticBody(space);
@@ -450,7 +472,7 @@ adl_serializer<struct cpConstraint*>::from_json(const json& j)
   }
   auto& bm = *bodyMap;
   cpBody *a, *b;
-  cpConstraint* ct;
+  cpConstraint* ct = nullptr;
   auto as = j["a"].get<std::string>();
   auto bs = j["b"].get<std::string>();
   if (as == "static")
@@ -499,38 +521,45 @@ adl_serializer<struct cpConstraint*>::from_json(const json& j)
 
     ct =
       cpDampedSpringNew(a, b, anchorA, anchorB, restLength, stiffness, damping);
-  }
-  if ("GrooveJoint" == j["type"]) {
+
+  } else if ("GrooveJoint" == j["type"]) {
     cpVect grv_n = j["grv_n"].get<cpVect>();
     cpVect grv_a = j["grv_a"].get<cpVect>();
     cpVect grv_b = j["grv_b"].get<cpVect>();
     cpVect anchorB = j["anchorB"].get<cpVect>();
     ct = cpGrooveJointNew(a, b, grv_a, grv_b, anchorB);
-  }
-  if ("RatchetJoint" == j["type"]) {
+
+  } else if ("RatchetJoint" == j["type"]) {
     cpFloat angle = cpFloatParse(j["angle"]);
     cpFloat phase = cpFloatParse(j["phase"]);
     cpFloat ratchet = cpFloatParse(j["ratchet"]);
     ct = cpRatchetJointNew(a, b, phase, ratchet);
-  }
-  if ("RotaryLimitJoint" == j["type"]) {
+
+  } else if ("RotaryLimitJoint" == j["type"]) {
     cpFloat min = cpFloatParse(j["min"]);
     cpFloat max = cpFloatParse(j["max"]);
     ct = cpRotaryLimitJointNew(a, b, min, max);
-  }
-  if ("SimpleMotor" == j["type"]) {
+
+  } else if ("SimpleMotor" == j["type"]) {
     cpFloat rate = cpFloatParse(j["rate"]);
     ct = cpSimpleMotorNew(a, b, rate);
-  }
-  if ("SlideJoint" == j["type"]) {
+
+  } else if ("SlideJoint" == j["type"]) {
     cpVect anchorA = j["anchorA"].get<cpVect>();
     cpVect anchorB = j["anchorB"].get<cpVect>();
     cpFloat min = cpFloatParse(j["min"]);
     cpFloat max = cpFloatParse(j["max"]);
     ct = cpSlideJointNew(a, b, anchorA, anchorB, min, max);
+
   } else {
+    std::cerr << "cpSerializeJson: unsupported constraint type "
+              << j.value("type", std::string("<missing>")) << ", skipped"
+              << std::endl;
     return nullptr;
   }
+
+  if (!ct)
+    return nullptr;
 
   ct = cpSpaceAddConstraint(space, ct);
 
